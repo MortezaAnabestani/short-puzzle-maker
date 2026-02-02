@@ -44,20 +44,24 @@ const AppContent: React.FC = () => {
   const [channelLogoUrl, setChannelLogoUrl] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const musicBufferRef = useRef<AudioBuffer | null>(null);
   const canvasHandleRef = useRef<CanvasHandle>(null);
 
-  const handleAddCloudTrack = useCallback((url: string, title: string, source: 'backend' | 'ai' = 'backend') => {
-    const newTrack: MusicTrack = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: title,
-      url: url,
-      source: source,
-    };
-    setMusicTracks((prev) => [...prev, newTrack]);
-    setSelectedTrackId(newTrack.id);
-    // Note: Audio is already loaded in selectSmartMusic, don't reload here to prevent conflicts
-    console.log(`📝 [App] Cloud track added to list: ${title} (${source})`);
-  }, []);
+  const handleAddCloudTrack = useCallback(
+    (url: string, title: string, source: "backend" | "ai" = "backend") => {
+      const newTrack: MusicTrack = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: title,
+        url: url,
+        source: source,
+      };
+      setMusicTracks((prev) => [...prev, newTrack]);
+      setSelectedTrackId(newTrack.id);
+      // Note: Audio is already loaded in selectSmartMusic, don't reload here to prevent conflicts
+      console.log(`📝 [App] Cloud track added to list: ${title} (${source})`);
+    },
+    []
+  );
 
   const {
     state,
@@ -75,7 +79,8 @@ const AppContent: React.FC = () => {
     selectedTrackId,
     setActiveTrackName,
     handleAddCloudTrack,
-    audioRef
+    audioRef,
+    musicBufferRef
   );
 
   const handleToggleSolve = async () => {
@@ -130,6 +135,7 @@ const AppContent: React.FC = () => {
         isRecording={state.isRecording}
         getCanvas={() => canvasHandleRef.current?.getCanvas() || null}
         audioRef={audioRef}
+        musicBufferRef={musicBufferRef}
         metadata={metadata}
         durationMinutes={preferences.durationMinutes}
         onRecordingComplete={setLastVideoBlob}
@@ -151,7 +157,8 @@ const AppContent: React.FC = () => {
           onGenerate={(isManual: boolean) => {
             processPipelineItem(
               { duration: preferences.durationMinutes, source: "VIRAL", pieceCount: 500 },
-              isManual
+              isManual,
+              0
             );
           }}
           onAutoMode={toggleAutoMode}
@@ -163,7 +170,7 @@ const AppContent: React.FC = () => {
               id: Math.random().toString(36).substr(2, 9),
               name: f.name,
               url: URL.createObjectURL(f),
-              source: 'manual' as const,
+              source: "manual" as const,
             }));
             setMusicTracks((prev) => [...prev, ...newTracks]);
             if (newTracks.length === 1) setSelectedTrackId(newTracks[0].id);

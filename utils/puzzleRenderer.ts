@@ -118,8 +118,13 @@ export const renderPuzzleFrame = ({
   const fState = getFinaleState(elapsedAfterFinish);
 
   // --- 1. ENVIRONMENT ---
-  envEngine.render(ctx, img, elapsed, vWidth, vHeight);
-
+  if (!physicsPieces) {
+    envEngine.render(ctx, img, elapsed, vWidth, vHeight);
+  } else {
+    // فقط یک پس‌زمینه ساده رندر کن
+    ctx.fillStyle = "#050505";
+    ctx.fillRect(0, 0, vWidth, vHeight);
+  }
   ctx.save();
   if (fState.isFinale) {
     ctx.translate(vWidth / 2, vHeight / 2);
@@ -151,12 +156,13 @@ export const renderPuzzleFrame = ({
 
   // --- 2. PIECES ---
   for (const p of completedPieces) {
-    // Clear trail when piece is completed
-    clearTrailForPiece(p.id);
+    // اگر فاز فینال نیست، محاسبات موج را کلاً نادیده بگیر
+    const waveY = fState.waveActive ? getDiagonalWaveY(p, elapsedAfterFinish, vWidth, vHeight) : 0;
 
-    const waveY = getDiagonalWaveY(p, elapsedAfterFinish, vWidth, vHeight);
     const drawX = p.tx - (p.cachedCanvas!.width - p.pw) / 2;
     const drawY = p.ty - (p.cachedCanvas!.height - p.ph) / 2 + waveY;
+
+    // استفاده ازdrawImage ساده بدون تغییر وضعیت Context تا جای ممکن
     ctx.drawImage(p.cachedCanvas!, drawX, drawY);
   }
 
@@ -166,6 +172,7 @@ export const renderPuzzleFrame = ({
       ctx.save();
       ctx.translate(physicsData.x, physicsData.y);
       ctx.rotate(physicsData.angle);
+      ctx.shadowBlur = 0;
       ctx.drawImage(p.cachedCanvas!, -p.cachedCanvas!.width / 2, -p.cachedCanvas!.height / 2);
       ctx.restore();
       continue;
@@ -187,8 +194,10 @@ export const renderPuzzleFrame = ({
     ctx.translate(pos.x, pos.y);
     ctx.rotate(pos.rot);
     ctx.scale(pos.scale, pos.scale);
-    ctx.shadowColor = "rgba(0,0,0,0.85)";
-    ctx.shadowBlur = 35 + (pos.scale - 1) * 150;
+    if (!fState.isFinale) {
+      ctx.shadowColor = "rgba(0,0,0,0.6)";
+      ctx.shadowBlur = 20;
+    }
     ctx.drawImage(p.cachedCanvas!, -p.cachedCanvas!.width / 2, -p.cachedCanvas!.height / 2);
     ctx.restore();
   }
